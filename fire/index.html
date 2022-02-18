@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>烟花</title>
+    <style>
+        canvas {
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <button onclick="start()">start</button>
+        <button onclick="stop()">stop</button>
+    </div>
+    <canvas id="fire"></canvas>
+    <script>
+        /** @type {HTMLCanvasElement} */
+        var showCanvas = document.getElementById("fire");
+        var showCtx = showCanvas.getContext("2d");
+
+        // var canvas = document.getElementById("fire_c");
+        var canvas = document.createElement("canvas");
+        var ctx = canvas.getContext("2d");
+        canvas.width = showCanvas.width = 900;
+        canvas.height = showCanvas.height = 600;
+
+        var fires = [];
+        var count = 100;
+        var colors = ["#6359EF", "#5682D4","#2DD4E1","#47D18F","#ED5E52","#F58B49","#FFC761","#FFE752"];
+        var speed = 5;
+
+        class Fire {
+            constructor(o) {
+                this.x = o.x;
+                this.y = o.y;
+                this.vx = o.vx;
+                this.vy = o.vy;
+                this.g = 0.05;
+                this.color = o.color;
+            }
+            // 用圆点实现
+            draw() {
+                ctx.beginPath();
+                ctx.fillStyle = this.color;
+                ctx.arc(this.x, this.y, 1, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.closePath();
+            }
+            // 用线条实现
+            drawLine() {
+                ctx.beginPath();
+                ctx.strokeStyle = this.color;
+                ctx.moveTo(this.x - this.vx, this.y - this.vy);
+                ctx.lineTo(this.x, this.y);
+                ctx.stroke();
+                ctx.closePath();
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.g;
+                this.drawLine();
+            }
+        }
+
+        function drawModal() {
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.fillStyle = "hsla(0, 100%, 50%,0.95)";
+            ctx.beginPath();
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = "source-over"
+        }
+        function setFiresList(position) {
+            if(position) {
+                var o = {
+                    x: position.x,
+                    y: position.y,
+                }
+            }else {
+                var o = {
+                    x: canvas.width/2,
+                    y: canvas.height/2,
+                }
+            }
+            var cn = 0;
+            for(var i=0;i<count;i++) {
+                if(cn > colors.length) cn=0;
+                o.color = colors[cn];
+                o.vx = speed * (Math.random() - 0.5);
+                o.vy = speed * (Math.random() - 0.5);
+                var fire = new Fire(o)
+                fires.push(fire)
+                cn++;
+            }
+        }
+        var animation;
+        function anime() {
+            cancelAnimationFrame(animation);
+            drawModal();
+            // ctx.clearRect(0,0,canvas.width, canvas.height)
+            for(var i=0;i<fires.length;i++) {
+                fires[i].update();
+                if(fires[i].x > canvas.width || fires[i].x < 0 || fires[i].y > canvas.height || fires[i].y < 0) {
+                    fires.splice(i, 1);
+                }
+            }
+            showCtx.clearRect(0, 0, showCanvas.width, showCanvas.height);
+            showCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+            animation = requestAnimationFrame(anime);
+        }
+        function start(e) {
+            if(e) {
+                var cvsBox = canvas.getBoundingClientRect();
+                var p = {
+                    x: e.offsetX - cvsBox.left,
+                    y: e.offsetY - cvsBox.top,
+                }
+            }
+            setFiresList(p);
+            anime();
+        }
+        function stop() {
+            cancelAnimationFrame(animation);
+        }
+        document.getElementById("fire").onclick = function(e) {
+            start(e);
+        }
+    </script>
+</body>
+
+</html>
