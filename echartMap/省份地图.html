@@ -27,7 +27,7 @@
     var str = url.substring(1, url.length)
     $.ajax({
         type: 'get',
-        url: `/sunlight/echarsMap/map/${str}.json`,
+        url: `/sunlight/echartMap/map/${str}.json`,
         dataType: 'Json',
         success: function (data) {
             var geoJson = data;
