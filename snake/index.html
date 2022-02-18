@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="./common.js"></script>
+
+    <style>
+      #map {
+        width: 800px;
+        height: 600px;
+        background-color: #ccc;
+        position: relative;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <button id="startGame">开始游戏</button>
+    <script>
+      //1. 面向对象
+      /*
+        分析：
+
+        Game对象     startGame方法
+                     gameOver方法
+        Food对象     x y color width height
+                    init 初始化食物的方法
+                    remove 方法
+        Snake对象   body [{x:1,y:1,color:red},{x:2,y:1,color:blue},{x:3,y:1,color:blue}]
+                    width  height
+                    direction
+
+                    init 初始化小蛇
+                    move 
+                    remove
+        */
+      var map = document.getElementById("map");
+
+      //食物的自调用函数
+      (function (w) {
+        //存放食物的数组
+        var elements = [];
+
+        //食物的构造函数
+        function Food(x, y, width, height) {
+          this.x = x || 0;
+          this.y = y || 0;
+          this.width = width || 20;
+          this.height = height || 20;
+          this.color = "green";
+        }
+
+        //食物的初始化方法
+        Food.prototype.init = function (map) {
+          //移除之前的食物
+          this.remove();
+          //指定食物的坐标
+          var maxX = Math.floor(map.offsetWidth / this.width);
+          var maxY = Math.floor(map.offsetHeight / this.height);
+          var x = Random.getRandom(0, maxX);
+          var y = Random.getRandom(0, maxY);
+          this.x = x;
+          this.y = y;
+
+          //创建页面元素
+          var foodEle = document.createElement("div");
+          foodEle.style.position = "absolute";
+          foodEle.style.width = this.width + "px";
+          foodEle.style.height = this.height + "px";
+          foodEle.style.backgroundColor = this.color;
+          foodEle.style.left = this.x * this.width + "px";
+          foodEle.style.top = this.y * this.height + "px";
+
+          //把食物添加到页面
+          map.appendChild(foodEle);
+          //把食物添加到数组里面
+          elements.push(foodEle);
+        };
+
+        w.Food = Food;
+
+        //移除食物的方法 （私有方法）
+        Food.prototype.remove = function () {
+          //要分别从页面和数组中移除
+          for (var i = elements.length - 1; i >= 0; i--) {
+            var ele = elements[i];
+            ele.parentNode.removeChild(ele);
+            elements.splice(i, 1);
+          }
+        };
+      })(window);
+
+      //蛇的自调用函数
+      (function (w) {
+        //存放小蛇身躯的数组
+        var elements = [];
+        //小蛇的构造函数
+        function Snake(width, height, direction) {
+          this.width = width || 20;
+          this.height = height || 20;
+          this.direction = direction || "right";
+          //小蛇身躯
+          this.body = [
+            { x: 3, y: 2, color: "red" },
+            { x: 2, y: 2, color: "green" },
+            { x: 1, y: 2, color: "green" },
+          ];
+        }
+        //小蛇的初始化方法
+        Snake.prototype.init = function (map) {
+          //移除之前的小蛇
+          this.remove();
+          //创建小蛇的每一个身躯
+          for (var i = 0; i < this.body.length; i++) {
+            var item = this.body[i];
+            var bodyEle = document.createElement("div");
+            bodyEle.style.position = "absolute";
+            bodyEle.style.width = this.width + "px";
+            bodyEle.style.height = this.height + "px";
+            bodyEle.style.backgroundColor = item.color;
+            bodyEle.style.left = item.x * this.width + "px";
+            bodyEle.style.top = item.y * this.height + "px";
+            map.appendChild(bodyEle);
+            elements.push(bodyEle);
+          }
+        };
+        //移除小蛇的方法
+        Snake.prototype.remove = function () {
+          for (var i = elements.length - 1; i >= 0; i--) {
+            elements[i].parentNode.removeChild(elements[i]);
+            elements.splice(i, 1);
+          }
+        };
+        //小蛇移动的方法
+        Snake.prototype.move = function (map) {
+          //改变非蛇头部分坐标
+          for (var i = this.body.length - 1; i > 0; i--) {
+            this.body[i].x = this.body[i - 1].x;
+            this.body[i].y = this.body[i - 1].y;
+          }
+
+          //改变蛇头部分坐标
+          switch (this.direction) {
+            case "right":
+              this.body[0].x += 1;
+              break;
+            case "left":
+              this.body[0].x -= 1;
+              break;
+            case "up":
+              this.body[0].y -= 1;
+              break;
+            case "down":
+              this.body[0].y += 1;
+              break;
+
+            default:
+              break;
+          }
+
+          this.init(map);
+        };
+        w.Snake = Snake;
+      })(window);
+
+      (function (w) {
+        function Game() {
+          this.food = new Food();
+          this.snake = new Snake();
+          this.map = document.getElementById("map");
+        }
+        Game.prototype.startGame = function () {
+          this.bindKey();
+          this.food.init(this.map);
+          this.snake.init(this.map);
+          setInterval(() => {
+            this.snake.move(this.map);
+          }, 300);
+        };
+        //绑定键盘的按键
+        Game.prototype.bindKey = function () {
+          var that = this;
+          document.onkeydown = function (e) {
+            var e = e || window.event;
+            switch (e.keyCode) {
+              //上
+              case 38:
+                that.snake.direction = "up";
+                break;
+              //右
+              case 39:
+                that.snake.direction = "right";
+                break;
+              //下
+              case 40:
+                that.snake.direction = "down";
+                break;
+              //左
+              case 37:
+                that.snake.direction = "left";
+                break;
+
+              default:
+                break;
+            }
+          };
+        };
+
+        w.Game = Game;
+      })(window);
+
+      document.getElementById("startGame").onclick = function () {
+        var game = new Game();
+        game.startGame();
+      };
+    </script>
+  </body>
+</html>
